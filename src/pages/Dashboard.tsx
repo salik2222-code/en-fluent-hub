@@ -23,54 +23,42 @@ const Dashboard = () => {
       description: "Practice conversation with your personal AI tutor",
       icon: MessageSquare,
       path: "/tutor",
-      color: "text-primary",
-      bgColor: "bg-primary/10",
-      available: true,
+      gradient: "from-primary/20 via-primary/10 to-transparent",
     },
     {
       title: "Pronunciation",
       description: "Record and improve your pronunciation",
       icon: Mic,
       path: "/pronunciation",
-      color: "text-accent",
-      bgColor: "bg-accent/10",
-      available: false,
+      gradient: "from-accent/20 via-accent/10 to-transparent",
     },
     {
       title: "Grammar Check",
       description: "Get instant grammar corrections",
       icon: FileText,
       path: "/grammar",
-      color: "text-primary",
-      bgColor: "bg-primary/10",
-      available: false,
+      gradient: "from-primary/20 via-primary/10 to-transparent",
     },
     {
       title: "Video Lessons",
       description: "Watch curated video lessons",
       icon: Video,
       path: "/lessons",
-      color: "text-accent",
-      bgColor: "bg-accent/10",
-      available: false,
+      gradient: "from-accent/20 via-accent/10 to-transparent",
     },
     {
       title: "Discussion Mode",
       description: "Practice debates on safe topics",
       icon: Users,
       path: "/discussion",
-      color: "text-primary",
-      bgColor: "bg-primary/10",
-      available: false,
+      gradient: "from-primary/20 via-primary/10 to-transparent",
     },
     {
       title: "Curriculum",
       description: "Browse 25+ learning topics",
       icon: BookOpen,
       path: "/curriculum",
-      color: "text-accent",
-      bgColor: "bg-accent/10",
-      available: false,
+      gradient: "from-accent/20 via-accent/10 to-transparent",
     },
   ];
 
@@ -151,26 +139,20 @@ const Dashboard = () => {
               return (
                 <Card
                   key={feature.title}
-                  className={`group transition-all hover:shadow-xl ${
-                    feature.available ? "cursor-pointer hover:scale-105" : "opacity-60"
-                  }`}
-                  onClick={() => feature.available && navigate(feature.path)}
+                  className="group relative overflow-hidden cursor-pointer hover:shadow-2xl transition-all hover:scale-[1.02] border-2 border-transparent hover:border-primary/20"
+                  onClick={() => navigate(feature.path)}
                 >
-                  <CardHeader>
-                    <div className={`w-14 h-14 ${feature.bgColor} rounded-lg flex items-center justify-center mb-3`}>
-                      <Icon className={`h-7 w-7 ${feature.color}`} />
+                  <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                  <CardHeader className="relative">
+                    <div className="w-16 h-16 bg-gradient-to-br from-primary/30 to-accent/30 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                      <Icon className="h-8 w-8 text-primary" />
                     </div>
-                    <CardTitle className="flex items-center justify-between">
+                    <CardTitle className="text-xl group-hover:text-primary transition-colors">
                       {feature.title}
-                      {!feature.available && (
-                        <span className="text-xs bg-muted px-2 py-1 rounded-full font-normal">
-                          Coming Soon
-                        </span>
-                      )}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <CardDescription>{feature.description}</CardDescription>
+                  <CardContent className="relative">
+                    <CardDescription className="text-base">{feature.description}</CardDescription>
                   </CardContent>
                 </Card>
               );
