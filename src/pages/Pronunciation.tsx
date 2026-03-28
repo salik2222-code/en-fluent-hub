@@ -7,7 +7,6 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
-const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tts`;
 const PRONUNCIATION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pronunciation-check`;
 
 const sentences = [
@@ -41,37 +40,30 @@ const Pronunciation = () => {
   const [result, setResult] = useState<PronunciationResult | null>(null);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const recognitionRef = useRef<any>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const currentSentence = sentences[currentIndex];
 
-  const handleListen = async () => {
-    setIsPlaying(true);
-    try {
-      const resp = await fetch(TTS_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ text: currentSentence.text, speed: playbackSpeed }),
-      });
-
-      if (!resp.ok) throw new Error("TTS failed");
-      const data = await resp.json();
-
-      if (data.audioContent) {
-        const audioUrl = `data:audio/mpeg;base64,${data.audioContent}`;
-        const audio = new Audio(audioUrl);
-        audioRef.current = audio;
-        audio.onended = () => setIsPlaying(false);
-        audio.onerror = () => setIsPlaying(false);
-        await audio.play();
-      }
-    } catch (error) {
-      toast({ title: "Error", description: "Could not play audio. Please try again.", variant: "destructive" });
-      setIsPlaying(false);
+  const handleListen = () => {
+    if (!window.speechSynthesis) {
+      toast({ title: "Not Supported", description: "Text-to-speech is not available in this browser.", variant: "destructive" });
+      return;
     }
+    setIsPlaying(true);
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(currentSentence.text);
+    utterance.lang = "en-US";
+    utterance.rate = playbackSpeed;
+    
+    // Try to pick a good English voice
+    const voices = window.speechSynthesis.getVoices();
+    const englishVoice = voices.find(v => v.lang.startsWith("en") && v.name.includes("Google")) 
+      || voices.find(v => v.lang.startsWith("en-US"))
+      || voices.find(v => v.lang.startsWith("en"));
+    if (englishVoice) utterance.voice = englishVoice;
+    
+    utterance.onend = () => setIsPlaying(false);
+    utterance.onerror = () => setIsPlaying(false);
+    window.speechSynthesis.speak(utterance);
   };
 
   const handleRecord = useCallback(() => {
@@ -96,11 +88,10 @@ const Pronunciation = () => {
       const transcript = event.results[0][0].transcript;
       setSpokenText(transcript);
       setIsRecording(false);
-      await analyzePronounciation(transcript);
+      await analyzePronunciation(transcript);
     };
 
     recognition.onerror = (event: any) => {
-      console.error("Speech recognition error:", event.error);
       setIsRecording(false);
       if (event.error === "not-allowed") {
         toast({ title: "Microphone Access", description: "Please allow microphone access to record.", variant: "destructive" });
@@ -119,7 +110,7 @@ const Pronunciation = () => {
     toast({ title: "🎤 Recording", description: "Speak the sentence clearly..." });
   }, [isRecording, currentSentence.text]);
 
-  const analyzePronounciation = async (spoken: string) => {
+  const analyzePronunciation = async (spoken: string) => {
     setIsAnalyzing(true);
     try {
       const resp = await fetch(PRONUNCIATION_URL, {
@@ -170,11 +161,10 @@ const Pronunciation = () => {
             Pronunciation Practice
           </h1>
           <p className="text-muted-foreground text-lg">
-            Listen to native audio, record yourself, and get AI feedback
+            Listen, record, and get AI-powered pronunciation feedback
           </p>
         </div>
 
-        {/* Sentence Card */}
         <Card className="mb-6">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Sentence {currentIndex + 1} of {sentences.length}</CardTitle>
@@ -184,7 +174,6 @@ const Pronunciation = () => {
             <div className="bg-secondary/30 p-6 rounded-lg mb-6">
               <p className="text-2xl font-medium text-center mb-6">{currentSentence.text}</p>
 
-              {/* Speed control */}
               <div className="flex items-center justify-center gap-2 mb-4">
                 <span className="text-xs text-muted-foreground">Speed:</span>
                 {[0.7, 1.0, 1.2].map((speed) => (
@@ -200,28 +189,15 @@ const Pronunciation = () => {
                 ))}
               </div>
 
-              <Button
-                variant="outline"
-                className="w-full"
-                size="lg"
-                onClick={handleListen}
-                disabled={isPlaying}
-              >
+              <Button variant="outline" className="w-full" size="lg" onClick={handleListen} disabled={isPlaying}>
                 {isPlaying ? (
-                  <>
-                    <Volume2 className="h-5 w-5 mr-2 animate-pulse" />
-                    Playing...
-                  </>
+                  <><Volume2 className="h-5 w-5 mr-2 animate-pulse" />Playing...</>
                 ) : (
-                  <>
-                    <Play className="h-5 w-5 mr-2" />
-                    Listen to Native Speaker
-                  </>
+                  <><Play className="h-5 w-5 mr-2" />Listen to Native Speaker</>
                 )}
               </Button>
             </div>
 
-            {/* Record Button */}
             <div className="space-y-4">
               <Button
                 size="lg"
@@ -231,20 +207,11 @@ const Pronunciation = () => {
                 className="w-full h-20 text-lg"
               >
                 {isAnalyzing ? (
-                  <>
-                    <Loader2 className="h-6 w-6 mr-3 animate-spin" />
-                    Analyzing your pronunciation...
-                  </>
+                  <><Loader2 className="h-6 w-6 mr-3 animate-spin" />Analyzing your pronunciation...</>
                 ) : isRecording ? (
-                  <>
-                    <Square className="h-6 w-6 mr-3" />
-                    Stop Recording
-                  </>
+                  <><Square className="h-6 w-6 mr-3" />Stop Recording</>
                 ) : (
-                  <>
-                    <Mic className="h-6 w-6 mr-3" />
-                    {result ? "Record Again" : "Start Recording"}
-                  </>
+                  <><Mic className="h-6 w-6 mr-3" />{result ? "Record Again" : "Start Recording"}</>
                 )}
               </Button>
 
@@ -257,17 +224,13 @@ const Pronunciation = () => {
                 </Card>
               )}
 
-              {/* Results */}
               {result && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  {/* Score */}
                   <Card className="bg-gradient-to-br from-primary/10 to-accent/10">
                     <CardContent className="p-6">
                       <div className="text-center mb-4">
                         <p className="text-sm text-muted-foreground mb-2">Pronunciation Score</p>
-                        <p className={`text-5xl font-bold ${getScoreColor(result.score)}`}>
-                          {result.score}
-                        </p>
+                        <p className={`text-5xl font-bold ${getScoreColor(result.score)}`}>{result.score}</p>
                         <p className="text-2xl text-muted-foreground">/100</p>
                       </div>
                       <Progress value={result.score} className="h-3 mb-4" />
@@ -275,35 +238,25 @@ const Pronunciation = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Feedback */}
                   <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Detailed Feedback</CardTitle>
-                    </CardHeader>
+                    <CardHeader><CardTitle className="text-lg">Detailed Feedback</CardTitle></CardHeader>
                     <CardContent className="space-y-3">
                       {result.feedback.map((item, idx) => (
                         <div key={idx} className="flex items-start gap-2">
-                          <span className={item.type === "correct" ? "text-green-500" : "text-accent"}>
-                            {item.type === "correct" ? "✓" : "→"}
-                          </span>
+                          <span className={item.type === "correct" ? "text-green-500" : "text-accent"}>{item.type === "correct" ? "✓" : "→"}</span>
                           <p className="text-sm">{item.text}</p>
                         </div>
                       ))}
                     </CardContent>
                   </Card>
 
-                  {/* IPA Tips */}
-                  {result.ipa_tips && result.ipa_tips.length > 0 && (
+                  {result.ipa_tips?.length > 0 && (
                     <Card className="bg-secondary/50">
-                      <CardHeader>
-                        <CardTitle className="text-lg">🔤 Pronunciation Tips</CardTitle>
-                      </CardHeader>
+                      <CardHeader><CardTitle className="text-lg">🔤 Pronunciation Tips</CardTitle></CardHeader>
                       <CardContent className="space-y-3">
                         {result.ipa_tips.map((tip, idx) => (
                           <div key={idx} className="border-l-4 border-primary pl-3 py-1">
-                            <p className="font-semibold">
-                              {tip.word} <span className="text-muted-foreground font-mono text-sm">{tip.ipa}</span>
-                            </p>
+                            <p className="font-semibold">{tip.word} <span className="text-muted-foreground font-mono text-sm">{tip.ipa}</span></p>
                             <p className="text-sm text-muted-foreground">{tip.tip}</p>
                           </div>
                         ))}
@@ -313,15 +266,12 @@ const Pronunciation = () => {
                 </div>
               )}
 
-              {/* Navigation */}
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => { setResult(null); setSpokenText(""); }}>
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Try Again
+                  <RotateCcw className="h-4 w-4 mr-2" />Try Again
                 </Button>
                 <Button className="flex-1" onClick={nextSentence}>
-                  Next Sentence
-                  <ChevronRight className="h-4 w-4 ml-2" />
+                  Next Sentence<ChevronRight className="h-4 w-4 ml-2" />
                 </Button>
               </div>
             </div>
