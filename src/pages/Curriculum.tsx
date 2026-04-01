@@ -33,7 +33,7 @@ const defaultCurriculum: CurriculumData = {
   intermediate: [
     { title: "Past Experiences", icon: Clock, lessons: makeLessons(7, 0, "i") },
     { title: "Work & Career", icon: Briefcase, lessons: makeLessons(6, 1, "i") },
-    { title: "Health & Fitness", icon: HeartPulse, lessons: makeLessons(5, 2, "i") },
+    { title: "Health & Fitness", icon: Heart, lessons: makeLessons(5, 2, "i") },
     { title: "Travel & Culture", icon: Plane, lessons: makeLessons(8, 3, "i") },
     { title: "Expressing Opinions", icon: MessageCircle, lessons: makeLessons(7, 4, "i") },
   ],
