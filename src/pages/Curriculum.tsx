@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ArrowLeft, BookOpen, CheckCircle2, Lock, Coffee, Hash, CalendarDays, Users, ShoppingCart, Clock, Briefcase, HeartPulse, Plane, MessageCircle, Handshake, Presentation, Globe, Quote, GraduationCap } from "lucide-react";
+import { ArrowLeft, BookOpen, CheckCircle2, Lock, Coffee, Hash, CalendarDays, Users, ShoppingCart, Clock, Briefcase, Heart, Plane, MessageCircle, Trophy, Monitor, Globe, Quote, GraduationCap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
