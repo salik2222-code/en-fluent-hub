@@ -28,6 +28,22 @@ const Discussion = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Track active time for daily goal
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const today = new Date().toDateString();
+      const stored = localStorage.getItem("dailyGoal");
+      const data = stored ? JSON.parse(stored) : { date: today, seconds: 0 };
+      if (data.date !== today) {
+        data.date = today;
+        data.seconds = 0;
+      }
+      data.seconds += 1;
+      localStorage.setItem("dailyGoal", JSON.stringify(data));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
