@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ArrowLeft, BookOpen, CheckCircle2, Lock, Coffee, Hash, CalendarDays, Users, ShoppingCart, Clock, Briefcase, HeartPulse, Plane, MessageCircle, Handshake, Presentation, Globe, Quote, GraduationCap } from "lucide-react";
+import { ArrowLeft, BookOpen, CheckCircle2, Lock, Coffee, Hash, CalendarDays, Users, ShoppingCart, Clock, Briefcase, Heart, Plane, MessageCircle, Trophy, Monitor, Globe, Quote, GraduationCap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -33,13 +33,13 @@ const defaultCurriculum: CurriculumData = {
   intermediate: [
     { title: "Past Experiences", icon: Clock, lessons: makeLessons(7, 0, "i") },
     { title: "Work & Career", icon: Briefcase, lessons: makeLessons(6, 1, "i") },
-    { title: "Health & Fitness", icon: HeartPulse, lessons: makeLessons(5, 2, "i") },
+    { title: "Health & Fitness", icon: Heart, lessons: makeLessons(5, 2, "i") },
     { title: "Travel & Culture", icon: Plane, lessons: makeLessons(8, 3, "i") },
     { title: "Expressing Opinions", icon: MessageCircle, lessons: makeLessons(7, 4, "i") },
   ],
   advanced: [
-    { title: "Business Negotiations", icon: Handshake, lessons: makeLessons(10, 0, "a") },
-    { title: "Public Speaking", icon: Presentation, lessons: makeLessons(8, 1, "a") },
+    { title: "Business Negotiations", icon: Trophy, lessons: makeLessons(10, 0, "a") },
+    { title: "Public Speaking", icon: Monitor, lessons: makeLessons(8, 1, "a") },
     { title: "Social Issues & Debates", icon: Globe, lessons: makeLessons(9, 2, "a") },
     { title: "Idioms & Slang", icon: Quote, lessons: makeLessons(7, 3, "a") },
     { title: "Academic Writing & Ethics", icon: GraduationCap, lessons: makeLessons(10, 4, "a") },
