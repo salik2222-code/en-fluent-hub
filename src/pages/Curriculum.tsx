@@ -38,8 +38,8 @@ const defaultCurriculum: CurriculumData = {
     { title: "Expressing Opinions", icon: MessageCircle, lessons: makeLessons(7, 4, "i") },
   ],
   advanced: [
-    { title: "Business Negotiations", icon: Handshake, lessons: makeLessons(10, 0, "a") },
-    { title: "Public Speaking", icon: Presentation, lessons: makeLessons(8, 1, "a") },
+    { title: "Business Negotiations", icon: Trophy, lessons: makeLessons(10, 0, "a") },
+    { title: "Public Speaking", icon: Monitor, lessons: makeLessons(8, 1, "a") },
     { title: "Social Issues & Debates", icon: Globe, lessons: makeLessons(9, 2, "a") },
     { title: "Idioms & Slang", icon: Quote, lessons: makeLessons(7, 3, "a") },
     { title: "Academic Writing & Ethics", icon: GraduationCap, lessons: makeLessons(10, 4, "a") },
