@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { MessageSquare, Mic, FileText, Video, Users, BookOpen, Trophy, Settings } from "lucide-react";
+import DailyGoalTracker from "@/components/DailyGoalTracker";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -18,58 +19,21 @@ const Dashboard = () => {
   }, [navigate]);
 
   const features = [
-    {
-      title: "AI Tutor Chat",
-      description: "Practice conversation with your personal AI tutor",
-      icon: MessageSquare,
-      path: "/tutor",
-      gradient: "from-primary/20 via-primary/10 to-transparent",
-    },
-    {
-      title: "Pronunciation",
-      description: "Record and improve your pronunciation",
-      icon: Mic,
-      path: "/pronunciation",
-      gradient: "from-accent/20 via-accent/10 to-transparent",
-    },
-    {
-      title: "Grammar Check",
-      description: "Get instant grammar corrections",
-      icon: FileText,
-      path: "/grammar",
-      gradient: "from-primary/20 via-primary/10 to-transparent",
-    },
-    {
-      title: "Video Lessons",
-      description: "Watch curated video lessons",
-      icon: Video,
-      path: "/lessons",
-      gradient: "from-accent/20 via-accent/10 to-transparent",
-    },
-    {
-      title: "Discussion Mode",
-      description: "Practice debates on safe topics",
-      icon: Users,
-      path: "/discussion",
-      gradient: "from-primary/20 via-primary/10 to-transparent",
-    },
-    {
-      title: "Curriculum",
-      description: "Browse 25+ learning topics",
-      icon: BookOpen,
-      path: "/curriculum",
-      gradient: "from-accent/20 via-accent/10 to-transparent",
-    },
+    { title: "AI Tutor Chat", description: "Practice conversation with your personal AI tutor", icon: MessageSquare, path: "/tutor", gradient: "from-primary/20 via-primary/10 to-transparent" },
+    { title: "Pronunciation", description: "Record and improve your pronunciation", icon: Mic, path: "/pronunciation", gradient: "from-accent/20 via-accent/10 to-transparent" },
+    { title: "Grammar Check", description: "Get instant grammar corrections", icon: FileText, path: "/grammar", gradient: "from-primary/20 via-primary/10 to-transparent" },
+    { title: "Video Lessons", description: "Watch curated video lessons", icon: Video, path: "/lessons", gradient: "from-accent/20 via-accent/10 to-transparent" },
+    { title: "Discussion Mode", description: "Practice debates on safe topics", icon: Users, path: "/discussion", gradient: "from-primary/20 via-primary/10 to-transparent" },
+    { title: "Curriculum", description: "Browse 15 topics across 3 levels", icon: BookOpen, path: "/curriculum", gradient: "from-accent/20 via-accent/10 to-transparent" },
   ];
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 E-Speak
               </h1>
               <span className="text-sm bg-secondary px-3 py-1 rounded-full capitalize">
@@ -89,7 +53,6 @@ const Dashboard = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Welcome Section */}
         <Card className="mb-8 bg-gradient-to-r from-primary/5 to-accent/5">
           <CardContent className="p-8">
             <h2 className="text-2xl font-bold mb-2">Welcome back! 👋</h2>
@@ -109,28 +72,8 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Daily Goal */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-accent" />
-              Daily Goal
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Practice 15 minutes today</span>
-                <span className="text-muted-foreground">8/15 min</span>
-              </div>
-              <div className="w-full bg-secondary rounded-full h-2">
-                <div className="bg-gradient-to-r from-primary to-primary-glow h-2 rounded-full transition-all" style={{ width: "53%" }} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <DailyGoalTracker />
 
-        {/* Features Grid */}
         <div className="mb-8">
           <h3 className="text-xl font-bold mb-4">Learning Tools</h3>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -160,7 +103,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Quick Actions */}
         <Card>
           <CardHeader>
             <CardTitle>Continue Learning</CardTitle>

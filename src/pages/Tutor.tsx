@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Bot, User } from "lucide-react";
+import { ArrowLeft, Send, Bot, User, ChevronDown, ChevronUp, CheckCircle2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type Message = {
@@ -11,7 +11,86 @@ type Message = {
   content: string;
 };
 
+type ParsedMessage = {
+  response: string;
+  correction: {
+    original: string;
+    corrected: string;
+    reason: string;
+  } | null;
+  isPerfect: boolean;
+};
+
+function parseAIMessage(content: string): ParsedMessage {
+  const responseMatch = content.match(/\[AI_RESPONSE\]\s*([\s\S]*?)(?=\[CORRECTION_START\]|$)/);
+  const correctionMatch = content.match(/\[CORRECTION_START\]\s*([\s\S]*?)\s*\[CORRECTION_END\]/);
+
+  const response = responseMatch ? responseMatch[1].trim() : content.replace(/\[AI_RESPONSE\]|\[CORRECTION_START\][\s\S]*?\[CORRECTION_END\]/g, '').trim();
+
+  if (!correctionMatch) {
+    return { response, correction: null, isPerfect: false };
+  }
+
+  const correctionText = correctionMatch[1].trim();
+  if (correctionText.toLowerCase().includes("perfect") || correctionText.toLowerCase().includes("no changes needed")) {
+    return { response, correction: null, isPerfect: true };
+  }
+
+  const originalMatch = correctionText.match(/Original:\s*"([^"]*)"/);
+  const correctedMatch = correctionText.match(/Corrected:\s*"([^"]*)"/);
+  const reasonMatch = correctionText.match(/Reason:\s*(.*)/);
+
+  if (originalMatch && correctedMatch && reasonMatch) {
+    return {
+      response,
+      correction: {
+        original: originalMatch[1],
+        corrected: correctedMatch[1],
+        reason: reasonMatch[1].trim(),
+      },
+      isPerfect: false,
+    };
+  }
+
+  return { response, correction: null, isPerfect: false };
+}
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+
+const CorrectionBlock = ({ parsed }: { parsed: ParsedMessage }) => {
+  const [open, setOpen] = useState(false);
+
+  if (parsed.isPerfect) {
+    return (
+      <div className="mt-3 flex items-center gap-2 text-xs text-primary bg-primary/10 px-3 py-2 rounded-lg">
+        <CheckCircle2 className="h-3.5 w-3.5" />
+        <span className="font-medium">Perfect! No changes needed.</span>
+      </div>
+    );
+  }
+
+  if (!parsed.correction) return null;
+
+  return (
+    <div className="mt-3">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 text-xs font-medium text-accent hover:text-accent/80 transition-colors"
+      >
+        <AlertCircle className="h-3.5 w-3.5" />
+        Grammar Correction
+        {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+      </button>
+      {open && (
+        <div className="mt-2 space-y-1.5 text-xs bg-accent/10 p-3 rounded-lg border border-accent/20">
+          <p><span className="font-semibold text-destructive">Original:</span> "{parsed.correction.original}"</p>
+          <p><span className="font-semibold text-primary">Corrected:</span> "{parsed.correction.corrected}"</p>
+          <p><span className="font-semibold text-muted-foreground">Reason:</span> {parsed.correction.reason}</p>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Tutor = () => {
   const navigate = useNavigate();
@@ -20,7 +99,7 @@ const Tutor = () => {
     {
       role: "assistant",
       content:
-        "Hello! I'm your E-Speak AI Tutor. I'm here to help you learn English. What would you like to practice today? We can work on vocabulary, grammar, or just have a conversation!",
+        "[AI_RESPONSE] Hello! I'm your E-Speak AI Tutor. I'm here to help you learn English. What would you like to practice today? We can work on vocabulary, grammar, or just have a conversation!\n\n[CORRECTION_START] Perfect! No changes needed. [CORRECTION_END]",
     },
   ]);
   const [input, setInput] = useState("");
@@ -34,6 +113,22 @@ const Tutor = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Track active time for daily goal
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const today = new Date().toDateString();
+      const stored = localStorage.getItem("dailyGoal");
+      const data = stored ? JSON.parse(stored) : { date: today, seconds: 0 };
+      if (data.date !== today) {
+        data.date = today;
+        data.seconds = 0;
+      }
+      data.seconds += 1;
+      localStorage.setItem("dailyGoal", JSON.stringify(data));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -112,7 +207,6 @@ const Tutor = () => {
         }
       }
 
-      // Flush remaining buffer
       if (textBuffer.trim()) {
         for (let raw of textBuffer.split("\n")) {
           if (!raw) continue;
@@ -178,33 +272,43 @@ const Tutor = () => {
       <div className="flex-1 overflow-y-auto">
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <div className="space-y-6">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex gap-4 ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}
-              >
+            {messages.map((message, index) => {
+              const parsed = message.role === "assistant" ? parseAIMessage(message.content) : null;
+              return (
                 <div
-                  className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                    message.role === "user" ? "bg-accent" : "bg-primary"
-                  }`}
+                  key={index}
+                  className={`flex gap-4 ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}
                 >
-                  {message.role === "user" ? (
-                    <User className="h-5 w-5 text-accent-foreground" />
-                  ) : (
-                    <Bot className="h-5 w-5 text-primary-foreground" />
-                  )}
+                  <div
+                    className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                      message.role === "user" ? "bg-accent" : "bg-primary"
+                    }`}
+                  >
+                    {message.role === "user" ? (
+                      <User className="h-5 w-5 text-accent-foreground" />
+                    ) : (
+                      <Bot className="h-5 w-5 text-primary-foreground" />
+                    )}
+                  </div>
+                  <Card
+                    className={`max-w-[80%] ${
+                      message.role === "user" ? "bg-accent/10" : "bg-primary/5"
+                    }`}
+                  >
+                    <CardContent className="p-4">
+                      {message.role === "assistant" && parsed ? (
+                        <>
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap">{parsed.response}</p>
+                          <CorrectionBlock parsed={parsed} />
+                        </>
+                      ) : (
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
-                <Card
-                  className={`max-w-[80%] ${
-                    message.role === "user" ? "bg-accent/10" : "bg-primary/5"
-                  }`}
-                >
-                  <CardContent className="p-4">
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                  </CardContent>
-                </Card>
-              </div>
-            ))}
+              );
+            })}
             {isLoading && !messages[messages.length - 1]?.content && (
               <div className="flex gap-4">
                 <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary flex items-center justify-center">
