@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mic, Square, Play, ArrowLeft, Volume2, Loader2, RotateCcw, ChevronRight } from "lucide-react";
@@ -6,19 +6,10 @@ import { useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { pronunciationSentences } from "@/data/pronunciationSentences";
 
 const PRONUNCIATION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pronunciation-check`;
-
-const sentences = [
-  { text: "The weather is beautiful today.", level: "Beginner" },
-  { text: "I would like to order a coffee, please.", level: "Beginner" },
-  { text: "She sells seashells by the seashore.", level: "Intermediate" },
-  { text: "The technology industry continues to evolve rapidly.", level: "Intermediate" },
-  { text: "How do you pronounce this word correctly?", level: "Beginner" },
-  { text: "Although it was raining, they decided to go for a walk.", level: "Advanced" },
-  { text: "The restaurant's atmosphere was absolutely magnificent.", level: "Advanced" },
-  { text: "Practice makes perfect, so keep trying every day.", level: "Beginner" },
-];
 
 type FeedbackItem = { type: "correct" | "improvement"; text: string };
 type IpaTip = { word: string; ipa: string; tip: string };
@@ -32,7 +23,8 @@ type PronunciationResult = {
 const Pronunciation = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [activeLevel, setActiveLevel] = useState<"Beginner" | "Intermediate" | "Advanced">("Beginner");
+  const [levelIndex, setLevelIndex] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -41,11 +33,26 @@ const Pronunciation = () => {
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const recognitionRef = useRef<any>(null);
 
-  const currentSentence = sentences[currentIndex];
+  // Track active time for daily goal
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const today = new Date().toDateString();
+      const stored = localStorage.getItem("dailyGoal");
+      const data = stored ? JSON.parse(stored) : { date: today, seconds: 0 };
+      if (data.date !== today) { data.date = today; data.seconds = 0; }
+      data.seconds += 1;
+      localStorage.setItem("dailyGoal", JSON.stringify(data));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const filtered = pronunciationSentences.filter((s) => s.level === activeLevel);
+  const currentSentence = filtered[levelIndex] || filtered[0];
+  const totalInLevel = filtered.length;
 
   const handleListen = () => {
     if (!window.speechSynthesis) {
-      toast({ title: "Not Supported", description: "Text-to-speech is not available in this browser.", variant: "destructive" });
+      toast({ title: "Not Supported", description: "Text-to-speech is not available.", variant: "destructive" });
       return;
     }
     setIsPlaying(true);
@@ -53,55 +60,38 @@ const Pronunciation = () => {
     const utterance = new SpeechSynthesisUtterance(currentSentence.text);
     utterance.lang = "en-US";
     utterance.rate = playbackSpeed;
-    
-    // Try to pick a good English voice
     const voices = window.speechSynthesis.getVoices();
-    const englishVoice = voices.find(v => v.lang.startsWith("en") && v.name.includes("Google")) 
+    const englishVoice = voices.find(v => v.lang.startsWith("en") && v.name.includes("Google"))
       || voices.find(v => v.lang.startsWith("en-US"))
       || voices.find(v => v.lang.startsWith("en"));
     if (englishVoice) utterance.voice = englishVoice;
-    
     utterance.onend = () => setIsPlaying(false);
     utterance.onerror = () => setIsPlaying(false);
     window.speechSynthesis.speak(utterance);
   };
 
   const handleRecord = useCallback(() => {
-    if (isRecording) {
-      recognitionRef.current?.stop();
-      setIsRecording(false);
-      return;
-    }
-
+    if (isRecording) { recognitionRef.current?.stop(); setIsRecording(false); return; }
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      toast({ title: "Not Supported", description: "Speech recognition is not supported in this browser. Try Chrome.", variant: "destructive" });
+      toast({ title: "Not Supported", description: "Speech recognition not supported. Try Chrome.", variant: "destructive" });
       return;
     }
-
     const recognition = new SpeechRecognition();
     recognition.lang = "en-US";
     recognition.continuous = false;
     recognition.interimResults = false;
-
     recognition.onresult = async (event: any) => {
       const transcript = event.results[0][0].transcript;
       setSpokenText(transcript);
       setIsRecording(false);
       await analyzePronunciation(transcript);
     };
-
     recognition.onerror = (event: any) => {
       setIsRecording(false);
-      if (event.error === "not-allowed") {
-        toast({ title: "Microphone Access", description: "Please allow microphone access to record.", variant: "destructive" });
-      } else {
-        toast({ title: "Error", description: "Could not recognize speech. Please try again.", variant: "destructive" });
-      }
+      toast({ title: "Error", description: event.error === "not-allowed" ? "Please allow microphone access." : "Could not recognize speech.", variant: "destructive" });
     };
-
     recognition.onend = () => setIsRecording(false);
-
     recognitionRef.current = recognition;
     recognition.start();
     setIsRecording(true);
@@ -115,25 +105,26 @@ const Pronunciation = () => {
     try {
       const resp = await fetch(PRONUNCIATION_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({ expected: currentSentence.text, spoken }),
       });
-
       if (!resp.ok) throw new Error("Analysis failed");
       const data: PronunciationResult = await resp.json();
       setResult(data);
-    } catch (error) {
+    } catch {
       toast({ title: "Error", description: "Could not analyze pronunciation.", variant: "destructive" });
-    } finally {
-      setIsAnalyzing(false);
-    }
+    } finally { setIsAnalyzing(false); }
   };
 
   const nextSentence = () => {
-    setCurrentIndex((prev) => (prev + 1) % sentences.length);
+    setLevelIndex((prev) => (prev + 1) % totalInLevel);
+    setResult(null);
+    setSpokenText("");
+  };
+
+  const handleLevelChange = (val: string) => {
+    setActiveLevel(val as any);
+    setLevelIndex(0);
     setResult(null);
     setSpokenText("");
   };
@@ -149,8 +140,7 @@ const Pronunciation = () => {
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Back to Dashboard
+            <ArrowLeft className="h-5 w-5 mr-2" />Back to Dashboard
           </Button>
         </div>
       </header>
@@ -160,59 +150,41 @@ const Pronunciation = () => {
           <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
             Pronunciation Practice
           </h1>
-          <p className="text-muted-foreground text-lg">
-            Listen, record, and get AI-powered pronunciation feedback
-          </p>
+          <p className="text-muted-foreground text-lg">150 sentences across 3 levels — Listen, record, and improve</p>
         </div>
+
+        <Tabs value={activeLevel} onValueChange={handleLevelChange} className="mb-6">
+          <TabsList className="grid w-full max-w-md mx-auto grid-cols-3">
+            <TabsTrigger value="Beginner">Beginner (50)</TabsTrigger>
+            <TabsTrigger value="Intermediate">Intermediate (50)</TabsTrigger>
+            <TabsTrigger value="Advanced">Advanced (50)</TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         <Card className="mb-6">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Sentence {currentIndex + 1} of {sentences.length}</CardTitle>
-            <Badge variant="outline">{currentSentence.level}</Badge>
+            <CardTitle>Sentence {levelIndex + 1} of {totalInLevel}</CardTitle>
+            <Badge variant="outline">{activeLevel}</Badge>
           </CardHeader>
           <CardContent>
             <div className="bg-secondary/30 p-6 rounded-lg mb-6">
               <p className="text-2xl font-medium text-center mb-6">{currentSentence.text}</p>
-
               <div className="flex items-center justify-center gap-2 mb-4">
                 <span className="text-xs text-muted-foreground">Speed:</span>
                 {[0.7, 1.0, 1.2].map((speed) => (
-                  <Button
-                    key={speed}
-                    variant={playbackSpeed === speed ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setPlaybackSpeed(speed)}
-                    className="text-xs px-3"
-                  >
+                  <Button key={speed} variant={playbackSpeed === speed ? "default" : "outline"} size="sm" onClick={() => setPlaybackSpeed(speed)} className="text-xs px-3">
                     {speed === 0.7 ? "Slow" : speed === 1.0 ? "Normal" : "Fast"}
                   </Button>
                 ))}
               </div>
-
               <Button variant="outline" className="w-full" size="lg" onClick={handleListen} disabled={isPlaying}>
-                {isPlaying ? (
-                  <><Volume2 className="h-5 w-5 mr-2 animate-pulse" />Playing...</>
-                ) : (
-                  <><Play className="h-5 w-5 mr-2" />Listen to Native Speaker</>
-                )}
+                {isPlaying ? <><Volume2 className="h-5 w-5 mr-2 animate-pulse" />Playing...</> : <><Play className="h-5 w-5 mr-2" />Listen to Native Speaker</>}
               </Button>
             </div>
 
             <div className="space-y-4">
-              <Button
-                size="lg"
-                variant={isRecording ? "destructive" : "default"}
-                onClick={handleRecord}
-                disabled={isAnalyzing}
-                className="w-full h-20 text-lg"
-              >
-                {isAnalyzing ? (
-                  <><Loader2 className="h-6 w-6 mr-3 animate-spin" />Analyzing your pronunciation...</>
-                ) : isRecording ? (
-                  <><Square className="h-6 w-6 mr-3" />Stop Recording</>
-                ) : (
-                  <><Mic className="h-6 w-6 mr-3" />{result ? "Record Again" : "Start Recording"}</>
-                )}
+              <Button size="lg" variant={isRecording ? "destructive" : "default"} onClick={handleRecord} disabled={isAnalyzing} className="w-full h-20 text-lg">
+                {isAnalyzing ? <><Loader2 className="h-6 w-6 mr-3 animate-spin" />Analyzing...</> : isRecording ? <><Square className="h-6 w-6 mr-3" />Stop Recording</> : <><Mic className="h-6 w-6 mr-3" />{result ? "Record Again" : "Start Recording"}</>}
               </Button>
 
               {spokenText && (
@@ -225,7 +197,7 @@ const Pronunciation = () => {
               )}
 
               {result && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="space-y-4 animate-fade-in">
                   <Card className="bg-gradient-to-br from-primary/10 to-accent/10">
                     <CardContent className="p-6">
                       <div className="text-center mb-4">
@@ -237,7 +209,6 @@ const Pronunciation = () => {
                       <p className="text-center text-muted-foreground">{result.overall}</p>
                     </CardContent>
                   </Card>
-
                   <Card>
                     <CardHeader><CardTitle className="text-lg">Detailed Feedback</CardTitle></CardHeader>
                     <CardContent className="space-y-3">
@@ -249,7 +220,6 @@ const Pronunciation = () => {
                       ))}
                     </CardContent>
                   </Card>
-
                   {result.ipa_tips?.length > 0 && (
                     <Card className="bg-secondary/50">
                       <CardHeader><CardTitle className="text-lg">🔤 Pronunciation Tips</CardTitle></CardHeader>

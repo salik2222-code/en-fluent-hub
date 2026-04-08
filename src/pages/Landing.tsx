@@ -1,10 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import heroImage from "@/assets/hero-image.jpg";
-import aiTutorIcon from "@/assets/ai-tutor-icon.png";
-import pronunciationIcon from "@/assets/pronunciation-icon.png";
-import grammarIcon from "@/assets/grammar-icon.png";
+import robotMascot from "@/assets/robot-mascot.png";
 import { MessageSquare, GraduationCap, Mic, FileText, Users, Trophy } from "lucide-react";
 
 const Landing = () => {
@@ -40,21 +37,16 @@ const Landing = () => {
                 >
                   Start Learning Free
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  className="text-lg px-8 py-6"
-                >
-                  Watch Demo
-                </Button>
               </div>
             </div>
-            <div className="relative">
+            <div className="relative flex items-center justify-center">
               <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-accent/20 blur-3xl rounded-full" />
               <img 
-                src={heroImage} 
-                alt="Students learning English together"
-                className="relative rounded-2xl shadow-2xl w-full"
+                src={robotMascot} 
+                alt="E-Speak AI Robot Mascot"
+                width={800}
+                height={800}
+                className="relative w-full max-w-md drop-shadow-2xl animate-[float_3s_ease-in-out_infinite]"
               />
             </div>
           </div>
@@ -76,11 +68,10 @@ const Landing = () => {
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             <Card className="group hover:shadow-xl transition-all hover:scale-105">
               <CardHeader>
-                <img src={aiTutorIcon} alt="AI Tutor" className="w-16 h-16 mb-4" />
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                  AI Tutor Chatbot
-                </CardTitle>
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <MessageSquare className="h-8 w-8 text-primary" />
+                </div>
+                <CardTitle>AI Tutor Chatbot</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
@@ -92,11 +83,10 @@ const Landing = () => {
 
             <Card className="group hover:shadow-xl transition-all hover:scale-105">
               <CardHeader>
-                <img src={pronunciationIcon} alt="Pronunciation" className="w-16 h-16 mb-4" />
-                <CardTitle className="flex items-center gap-2">
-                  <Mic className="h-5 w-5 text-primary" />
-                  Pronunciation Trainer
-                </CardTitle>
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <Mic className="h-8 w-8 text-primary" />
+                </div>
+                <CardTitle>Pronunciation Trainer</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
@@ -108,11 +98,10 @@ const Landing = () => {
 
             <Card className="group hover:shadow-xl transition-all hover:scale-105">
               <CardHeader>
-                <img src={grammarIcon} alt="Grammar" className="w-16 h-16 mb-4" />
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  Grammar Correction
-                </CardTitle>
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <FileText className="h-8 w-8 text-primary" />
+                </div>
+                <CardTitle>Grammar Correction</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
@@ -124,7 +113,9 @@ const Landing = () => {
 
             <Card className="group hover:shadow-xl transition-all hover:scale-105">
               <CardHeader>
-                <GraduationCap className="h-16 w-16 mb-4 text-primary" />
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <GraduationCap className="h-8 w-8 text-primary" />
+                </div>
                 <CardTitle>Video Lessons</CardTitle>
               </CardHeader>
               <CardContent>
@@ -137,7 +128,9 @@ const Landing = () => {
 
             <Card className="group hover:shadow-xl transition-all hover:scale-105">
               <CardHeader>
-                <Users className="h-16 w-16 mb-4 text-primary" />
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <Users className="h-8 w-8 text-primary" />
+                </div>
                 <CardTitle>Discussion Mode</CardTitle>
               </CardHeader>
               <CardContent>
@@ -150,7 +143,9 @@ const Landing = () => {
 
             <Card className="group hover:shadow-xl transition-all hover:scale-105">
               <CardHeader>
-                <Trophy className="h-16 w-16 mb-4 text-primary" />
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <Trophy className="h-8 w-8 text-primary" />
+                </div>
                 <CardTitle>Tests & Progress</CardTitle>
               </CardHeader>
               <CardContent>
