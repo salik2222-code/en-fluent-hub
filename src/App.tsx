@@ -11,7 +11,8 @@ import Pronunciation from "./pages/Pronunciation";
 import Grammar from "./pages/Grammar";
 import Lessons from "./pages/Lessons";
 import Discussion from "./pages/Discussion";
-import Curriculum from "./pages/Curriculum";
+import TalkWithESpeak from "./pages/TalkWithESpeak";
+import Roadmap from "./pages/Roadmap";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,7 +32,8 @@ const App = () => (
           <Route path="/grammar" element={<Grammar />} />
           <Route path="/lessons" element={<Lessons />} />
           <Route path="/discussion" element={<Discussion />} />
-          <Route path="/curriculum" element={<Curriculum />} />
+          <Route path="/talk" element={<TalkWithESpeak />} />
+          <Route path="/roadmap" element={<Roadmap />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
