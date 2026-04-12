@@ -3,26 +3,27 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Send, Bot, User, MessageSquare, Swords } from "lucide-react";
+import { ArrowLeft, Send, Bot, User, MessageSquare, Swords, Mic, Volume2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { discussionTopics } from "@/data/discussionTopics";
+import { useTTS, useSTT } from "@/hooks/useSpeech";
 
 type Message = { role: "user" | "assistant"; content: string };
-
 const DISCUSSION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/discussion`;
 
 const Discussion = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { speak, isSpeaking } = useTTS();
+  const { startListening, isListening } = useSTT();
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [mode, setMode] = useState<"discuss" | "debate">("discuss");
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Track active time for daily goal
   useEffect(() => {
     const interval = setInterval(() => {
       const today = new Date().toDateString();
@@ -44,15 +45,16 @@ const Discussion = () => {
     const intro: Message = {
       role: "assistant",
       content: chosenMode === "debate"
-        ? `Welcome to the debate! 🎯 Our topic: "${topic}". I'll take the opposite position. You go first — share your view in 2 sentences!`
-        : `Let's discuss "${topic}"! 💬 I'd love to hear your thoughts. What comes to mind first?`,
+        ? `Welcome to the debate! 🎯 Our topic: "${topic}". I'll take the opposite position. You go first!`
+        : `Let's discuss "${topic}"! 💬 What comes to mind first?`,
     };
     setMessages([intro]);
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-    const userMessage: Message = { role: "user", content: input };
+  const handleSend = async (text?: string) => {
+    const msg = text || input;
+    if (!msg.trim() || isLoading) return;
+    const userMessage: Message = { role: "user", content: msg };
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
     setInput("");
@@ -64,8 +66,8 @@ const Discussion = () => {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
         body: JSON.stringify({ messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })), topic: selectedTopic, mode }),
       });
-      if (!resp.ok) { const err = await resp.json().catch(() => ({})); throw new Error(err.error || "Failed to get response"); }
-      if (!resp.body) throw new Error("No response body");
+      if (!resp.ok) { const err = await resp.json().catch(() => ({})); throw new Error(err.error || "Failed"); }
+      if (!resp.body) throw new Error("No body");
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let textBuffer = "";
@@ -73,10 +75,10 @@ const Discussion = () => {
         const { done, value } = await reader.read();
         if (done) break;
         textBuffer += decoder.decode(value, { stream: true });
-        let newlineIndex: number;
-        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
-          textBuffer = textBuffer.slice(newlineIndex + 1);
+        let ni: number;
+        while ((ni = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, ni);
+          textBuffer = textBuffer.slice(ni + 1);
           if (line.endsWith("\r")) line = line.slice(0, -1);
           if (line.startsWith(":") || line.trim() === "") continue;
           if (!line.startsWith("data: ")) continue;
@@ -90,9 +92,7 @@ const Discussion = () => {
               const cur = assistantContent;
               setMessages((prev) => {
                 const last = prev[prev.length - 1];
-                if (last?.role === "assistant" && prev.length > 1 && prev[prev.length - 2]?.role === "user") {
-                  return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: cur } : m));
-                }
+                if (last?.role === "assistant" && prev.length > 1 && prev[prev.length - 2]?.role === "user") return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: cur } : m));
                 return [...prev, { role: "assistant", content: cur }];
               });
             }
@@ -100,56 +100,37 @@ const Discussion = () => {
         }
       }
     } catch (error) {
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Failed to get response", variant: "destructive" });
+      toast({ title: "Error", description: error instanceof Error ? error.message : "Failed", variant: "destructive" });
     } finally { setIsLoading(false); }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } };
 
-  // Topic selection screen
+  const handleMic = () => {
+    if (isListening) return;
+    startListening(
+      (text) => { setInput(text); handleSend(text); },
+      (err) => toast({ title: "Mic Error", description: err, variant: "destructive" })
+    );
+  };
+
   if (!selectedTopic) {
     const levels = ["Beginner", "Intermediate", "Advanced"] as const;
     return (
       <div className="min-h-screen bg-background">
         <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="container mx-auto px-4 py-4">
-            <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-              <ArrowLeft className="h-5 w-5 mr-2" />Back to Dashboard
-            </Button>
+            <Button variant="ghost" onClick={() => navigate("/dashboard")}><ArrowLeft className="h-5 w-5 mr-2" />Back to Dashboard</Button>
           </div>
         </header>
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-              Discussion & Debate
-            </h1>
-            <p className="text-muted-foreground text-lg">30 topics across 3 levels — practice speaking with AI</p>
+            <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">Discussion & Debate</h1>
+            <p className="text-muted-foreground text-lg">30 topics across 3 levels — with voice support</p>
           </div>
-
-          <Card className="mb-8 bg-gradient-to-r from-primary/5 to-accent/5">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-3">
-                <MessageSquare className="h-6 w-6 text-primary mt-1" />
-                <div>
-                  <h3 className="font-semibold mb-2">Two Modes Available</h3>
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <div className="bg-card p-3 rounded-lg">
-                      <p className="font-medium flex items-center gap-2">💬 Discussion</p>
-                      <p className="text-sm text-muted-foreground">Have a friendly conversation on the topic</p>
-                    </div>
-                    <div className="bg-card p-3 rounded-lg">
-                      <p className="font-medium flex items-center gap-2">⚔️ Debate</p>
-                      <p className="text-sm text-muted-foreground">AI takes the opposite side — defend your position!</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           <Tabs defaultValue="Beginner">
             <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 mb-6">
-              {levels.map((l) => <TabsTrigger key={l} value={l}>{l} ({discussionTopics.filter(t => t.difficulty === l).length})</TabsTrigger>)}
+              {levels.map((l) => <TabsTrigger key={l} value={l}>{l}</TabsTrigger>)}
             </TabsList>
             {levels.map((level) => (
               <TabsContent key={level} value={level}>
@@ -162,15 +143,11 @@ const Discussion = () => {
                           <span className="text-2xl">{topic.emoji}</span>
                         </div>
                         <CardTitle className="text-xl">{topic.title}</CardTitle>
-                        <CardDescription>Choose your mode to start</CardDescription>
+                        <CardDescription>Choose your mode</CardDescription>
                       </CardHeader>
                       <CardContent className="flex gap-2">
-                        <Button className="flex-1" variant="outline" onClick={() => startTopic(topic.title, "discuss")}>
-                          <MessageSquare className="h-4 w-4 mr-2" />Discuss
-                        </Button>
-                        <Button className="flex-1" onClick={() => startTopic(topic.title, "debate")}>
-                          <Swords className="h-4 w-4 mr-2" />Debate
-                        </Button>
+                        <Button className="flex-1" variant="outline" onClick={() => startTopic(topic.title, "discuss")}><MessageSquare className="h-4 w-4 mr-2" />Discuss</Button>
+                        <Button className="flex-1" onClick={() => startTopic(topic.title, "debate")}><Swords className="h-4 w-4 mr-2" />Debate</Button>
                       </CardContent>
                     </Card>
                   ))}
@@ -183,19 +160,13 @@ const Discussion = () => {
     );
   }
 
-  // Chat screen
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => { setSelectedTopic(null); setMessages([]); }}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div className="flex-1">
-              <h1 className="text-xl font-bold flex items-center gap-2">{mode === "debate" ? "⚔️" : "💬"} {selectedTopic}</h1>
-              <p className="text-sm text-muted-foreground capitalize">{mode} Mode</p>
-            </div>
+            <Button variant="ghost" size="icon" onClick={() => { setSelectedTopic(null); setMessages([]); }}><ArrowLeft className="h-5 w-5" /></Button>
+            <div className="flex-1"><h1 className="text-xl font-bold">{mode === "debate" ? "⚔️" : "💬"} {selectedTopic}</h1><p className="text-sm text-muted-foreground capitalize">{mode} Mode</p></div>
           </div>
         </div>
       </header>
@@ -208,7 +179,14 @@ const Discussion = () => {
                   {message.role === "user" ? <User className="h-5 w-5 text-accent-foreground" /> : <Bot className="h-5 w-5 text-primary-foreground" />}
                 </div>
                 <Card className={`max-w-[80%] ${message.role === "user" ? "bg-accent/10" : "bg-primary/5"}`}>
-                  <CardContent className="p-4"><p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p></CardContent>
+                  <CardContent className="p-4">
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                    {message.role === "assistant" && (
+                      <Button variant="ghost" size="sm" className="mt-2 h-7 text-xs" onClick={() => speak(message.content)} disabled={isSpeaking}>
+                        <Volume2 className="h-3.5 w-3.5 mr-1" />{isSpeaking ? "Playing..." : "Listen"}
+                      </Button>
+                    )}
+                  </CardContent>
                 </Card>
               </div>
             ))}
@@ -225,8 +203,11 @@ const Discussion = () => {
       <div className="border-t bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 max-w-4xl">
           <div className="flex gap-3">
-            <Textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={handleKeyPress} placeholder="Type your response... (Enter to send)" className="min-h-[60px] resize-none" disabled={isLoading} />
-            <Button size="icon" onClick={handleSend} disabled={!input.trim() || isLoading} className="h-[60px] w-[60px]"><Send className="h-5 w-5" /></Button>
+            <Button variant={isListening ? "destructive" : "outline"} size="icon" onClick={handleMic} className="h-[60px] w-[60px] shrink-0">
+              <Mic className={`h-5 w-5 ${isListening ? "animate-pulse" : ""}`} />
+            </Button>
+            <Textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={handleKeyPress} placeholder="Type or speak..." className="min-h-[60px] resize-none" disabled={isLoading} />
+            <Button size="icon" onClick={() => handleSend()} disabled={!input.trim() || isLoading} className="h-[60px] w-[60px] shrink-0"><Send className="h-5 w-5" /></Button>
           </div>
         </div>
       </div>
