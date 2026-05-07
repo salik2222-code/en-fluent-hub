@@ -8,10 +8,11 @@
  *
  * 2) Custom Google Apps Script Web App webhook — paste your deployed URL below.
  */
-export const GOOGLE_SHEET_CRM_URL = "YOUR_LINK_HERE";
+export const GOOGLE_SHEET_CRM_URL =
+  "https://docs.google.com/spreadsheets/d/1VqcY_evHEFpWIdDFKw6eQKBr35Dsycj-ZdB7OSEJ1IA";
 
-/** ID of the Google Sheet to append rows to (used by `crm-log` edge function). */
-export const GOOGLE_SHEET_ID = "YOUR_SHEET_ID_HERE";
+/** ID of the "E Speak List" Google Sheet (used by `crm-log` edge function). */
+export const GOOGLE_SHEET_ID = "1VqcY_evHEFpWIdDFKw6eQKBr35Dsycj-ZdB7OSEJ1IA";
 
-/** Tab/range inside the sheet — e.g. `Activities!A:F`. */
-export const GOOGLE_SHEET_RANGE = "Activities!A:G";
+/** Columns: A=Name, B=Email, C=Activity, D=Score, E=Date */
+export const GOOGLE_SHEET_RANGE = "Sheet1!A:E";

@@ -1,41 +1,48 @@
-// CRM bridge: mirrors student activity rows to Google Sheets via the Lovable connector gateway.
-// Non-fatal: if Sheets is misconfigured, returns 200 with `skipped: true` so client logging is unaffected.
+// CRM bridge: appends a row to the "E Speak List" Google Sheet for every student activity.
+// Columns: A=Name, B=Email, C=Activity, D=Score, E=Date
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_sheets/v4";
-
-// Configure these via env (or hardcode for the project)
-const SHEET_ID = Deno.env.get("CRM_SHEET_ID") ?? "";
-const SHEET_RANGE = Deno.env.get("CRM_SHEET_RANGE") ?? "Activities!A:G";
+const SHEET_ID = "1VqcY_evHEFpWIdDFKw6eQKBr35Dsycj-ZdB7OSEJ1IA";
+const SHEET_RANGE = "Sheet1!A:E";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
     const body = await req.json();
-    const { user_id, email, activity_type, score, duration_seconds, details, created_at } = body ?? {};
+    const { display_name, email, activity_type, score, created_at } = body ?? {};
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SHEETS_KEY = Deno.env.get("GOOGLE_SHEETS_API_KEY");
 
-    if (!SHEET_ID || !LOVABLE_API_KEY || !SHEETS_KEY) {
+    if (!LOVABLE_API_KEY || !SHEETS_KEY) {
+      console.warn("crm-log: missing gateway credentials");
       return new Response(JSON.stringify({ skipped: true, reason: "sheets not configured" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const activityLabel =
+      activity_type === "pronunciation" ? "Pronunciation"
+      : activity_type === "grammar" ? "Grammar"
+      : activity_type === "debate" ? "Debate"
+      : activity_type === "tutor" ? "Tutor"
+      : activity_type === "talk" ? "Talk"
+      : String(activity_type ?? "");
+
+    const dateStr = new Date(created_at ?? Date.now()).toISOString().slice(0, 10);
+
     const row = [
-      created_at ?? new Date().toISOString(),
-      user_id ?? "",
+      display_name ?? "",
       email ?? "",
-      activity_type ?? "",
+      activityLabel,
       score ?? "",
-      duration_seconds ?? 0,
-      JSON.stringify(details ?? {}),
+      dateStr,
     ];
 
     const url = `${GATEWAY_URL}/spreadsheets/${SHEET_ID}/values/${SHEET_RANGE}:append?valueInputOption=USER_ENTERED`;
