@@ -25,7 +25,7 @@ export async function logActivity(activity: ActivityLog) {
     details: activity.details ?? {},
   };
 
-  const { error } = await supabase.from("student_activities").insert(payload);
+  const { error } = await supabase.from("student_activities").insert([payload as any]);
   if (error) console.error("activity log error", error);
 
   // Fire-and-forget CRM mirror
