@@ -7,6 +7,9 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
+import StudentLogin from "./pages/StudentLogin";
+import TeacherLogin from "./pages/TeacherLogin";
+import TeacherLiveLogs from "./pages/teacher/TeacherLiveLogs";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Tutor from "./pages/Tutor";
@@ -35,6 +38,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/login" element={<StudentLogin />} />
+            <Route path="/teacher-login" element={<TeacherLogin />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/tutor" element={<Tutor />} />
@@ -50,6 +55,7 @@ const App = () => (
             <Route path="/teacher/students" element={<ProtectedRoute requireRole="teacher"><TeacherStudents /></ProtectedRoute>} />
             <Route path="/teacher/assignments" element={<ProtectedRoute requireRole="teacher"><TeacherAssignments /></ProtectedRoute>} />
             <Route path="/teacher/analytics" element={<ProtectedRoute requireRole="teacher"><TeacherAnalytics /></ProtectedRoute>} />
+            <Route path="/teacher/live-logs" element={<ProtectedRoute requireRole="teacher"><TeacherLiveLogs /></ProtectedRoute>} />
             <Route path="/teacher/settings" element={<ProtectedRoute requireRole="teacher"><TeacherSettings /></ProtectedRoute>} />
 
             <Route path="*" element={<NotFound />} />

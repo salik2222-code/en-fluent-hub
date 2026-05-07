@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Users, ClipboardList, BarChart3, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, ClipboardList, BarChart3, Settings, LogOut, Database } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,7 @@ const nav = [
   { to: "/teacher/students", icon: Users, label: "My Students" },
   { to: "/teacher/assignments", icon: ClipboardList, label: "Assignments" },
   { to: "/teacher/analytics", icon: BarChart3, label: "AI Analytics" },
+  { to: "/teacher/live-logs", icon: Database, label: "Live Logs" },
   { to: "/teacher/settings", icon: Settings, label: "Settings" },
 ];
 
